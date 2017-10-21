@@ -1,0 +1,9 @@
+XzBotDiscord/Packages/*
+!XzBotDiscord/Packages/Discord.Net.1.0.2/
+!XzBotDiscord/Packages/Discord.Net.Commands.1.0.2/
+!XzBotDiscord/Packages/Discord.Net.Core.1.0.2/
+!XzBotDiscord/Packages/Discord.Net.Rest.1.0.2
+!XzBotDiscord/Packages/Discord.Net.Rpc.1.0.2/
+!XzBotDiscord/Packages/Discord.Net.Webhook.1.0.2/
+!XzBotDiscord/Packages/Discord.Net.WebSocket.1.0.2/
+!XzBotDiscord/Packages/Newtonsoft.Json.10.0.2/
