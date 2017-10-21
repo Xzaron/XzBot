@@ -51,7 +51,7 @@ namespace XzBotDiscord
             client.Log += Log;
             client.MessageReceived += MessageReceived;
 
-            string token = "MzI1MzI4MDA2NjQ0MjM2Mjg5.DCXAGg.2XbgzAG97w5ZhSq1WVEsAGqOyMw"; // Remember to keep this private!
+            string token = ; // Remember to keep this private!
 
             await InstallCommands();
 
