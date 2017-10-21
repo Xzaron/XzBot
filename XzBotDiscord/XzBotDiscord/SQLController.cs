@@ -38,11 +38,19 @@ namespace XzBotDiscord
         public SQLController(Program program)
         {
             mainProgram = program;
-            string[] allLines = mainProgram.readWriteFile.ReturnAllLinesAsArray("c:\\Users\\Public\\Documents\\DiscordSQLConnection.txt");
-            Dictionary<string, string> sqlDict = mainProgram.readWriteFile.CreateDictFromStringArray(allLines, '=');
-            databaseName = sqlDict["Database"];
-            userId = sqlDict["UserID"];
-            userPassword = sqlDict["Password"];
+        }
+
+        public void UpdateDBName(string dbName)
+        {
+            databaseName = dbName;
+        }
+        public void UpdateDBUserID(string dbUserID)
+        {
+            userId = dbUserID;
+        }
+        public void UpdateDBPassword(string dbUserPassword)
+        {
+            userPassword = dbUserPassword;
         }
 
         public void InsertGo(string table_name, string fields, string values)

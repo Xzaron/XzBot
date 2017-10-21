@@ -1,3 +1,4 @@
 Database=
 UserID=
 Password=
+Token=

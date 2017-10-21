@@ -32,6 +32,7 @@ namespace XzBotDiscord
         public SQLController sqlController;
         public ReadWriteFile readWriteFile;
 
+        private static string token = null;
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -47,15 +48,24 @@ namespace XzBotDiscord
             
             sqlController = new SQLController(this);
 
+            string[] allLines = readWriteFile.ReturnAllLinesAsArray("c:\\Users\\Public\\Documents\\DiscordSQLConnection.txt");
+            Dictionary<string, string> sqlDict = readWriteFile.CreateDictFromStringArray(allLines, '=');
+            sqlController.UpdateDBName(sqlDict["Database"]);
+            sqlController.UpdateDBUserID(sqlDict["UserID"]);
+            sqlController.UpdateDBPassword(sqlDict["Password"]);
+            token = sqlDict["Token"];
+
+
+
 
             client.Log += Log;
             client.MessageReceived += MessageReceived;
 
-            string token = ; // Remember to keep this private!
+            string tokenNew = token; // Remember to keep this private!
 
             await InstallCommands();
 
-            await client.LoginAsync(TokenType.Bot, token);
+            await client.LoginAsync(TokenType.Bot, tokenNew);
             await client.StartAsync();
 
             Task taskA = Task.Run(() => NightTimer());
