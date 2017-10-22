@@ -42,12 +42,12 @@ namespace XzBotDiscord
             readWriteFile = new ReadWriteFile(this);
             customCommands = new CustomCommands(this);
             schedulingClass = new Scheduling(this);
+            sqlController = new SQLController(this);
+
             client = new DiscordSocketClient();
             services = new ServiceCollection().BuildServiceProvider();
             commands = new CommandService();
             
-            sqlController = new SQLController(this);
-
             string[] allLines = readWriteFile.ReturnAllLinesAsArray("c:\\Users\\Public\\Documents\\DiscordSQLConnection.txt");
             Dictionary<string, string> sqlDict = readWriteFile.CreateDictFromStringArray(allLines, '=');
             sqlController.UpdateDBName(sqlDict["Database"]);
@@ -117,7 +117,7 @@ namespace XzBotDiscord
                     
                 }
 
-                Thread.Sleep(1000);
+                Thread.Sleep(sleeptimer);
             }
 
         }

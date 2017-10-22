@@ -144,7 +144,7 @@ namespace XzBotDiscord
 
                 if (minutes < 0)
                 {
-                    returnString += "Please run $gametime command to reset the time.";
+                    returnString += "Please run $gametime command to reset the time. $gametime 8:51 AM \n";
                 }
                 else if (minutes > 60)
                 {
