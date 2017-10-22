@@ -141,7 +141,12 @@ namespace XzBotDiscord
                             
                 TimeSpan minutesLeft = currentDayEnd - now;
                 double minutes = Math.Round(minutesLeft.TotalMinutes);
-                if (minutes > 60)
+
+                if (minutes < 0)
+                {
+                    returnString += "Please run $gametime command to reset the time.";
+                }
+                else if (minutes > 60)
                 {
                     string minutes2 = minutesLeft.Minutes.ToString();
                     if(minutes < 10)
