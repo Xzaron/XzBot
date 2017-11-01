@@ -21,7 +21,7 @@ namespace XzBotDiscord
         bool fileExists = false;
         private Logging logging;
 
-        private Program mainProgram;
+        private DiscordManager mainProgram;
 
 
         public DateTime dayStart;
@@ -32,7 +32,7 @@ namespace XzBotDiscord
         public string[] admins = { "Xzaron", "Defector", "Rice" };
         public string[] officers = { "Tyriel", "", "", "" };
 
-        public CustomCommands(Program program)
+        public CustomCommands(DiscordManager program)
         {
             mainProgram = program;
             logging = new Logging();

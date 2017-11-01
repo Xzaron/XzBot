@@ -10,11 +10,8 @@ namespace XzBotDiscord
 {
     public class ReadWriteFile
     {
-        Program mainProgram;
-
-        public ReadWriteFile(Program program)
+        public ReadWriteFile()
         {
-            mainProgram = program;
         }
 
         public void WriteToFile(bool overrideFile, string text, string fileName = @"Filename.txt")

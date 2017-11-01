@@ -66,14 +66,14 @@ namespace XzBotDiscord
 
     class Scheduling
     {
-        static Program mainProgram;
+        static DiscordManager discordManager;
         static List<ScheduleAppt> schedulingList;
         static List<User> userList;
 
 
-        public Scheduling(Program program)
+        public Scheduling(DiscordManager program)
         {
-            mainProgram = program;
+            discordManager = program;
             schedulingList = new List<ScheduleAppt>();
             userList = new List<User>();
 
@@ -116,6 +116,7 @@ namespace XzBotDiscord
 
         private static void GetActiveVoiceUsers()
         {
+            /*
             List<SocketGuildChannel> channelList = mainProgram.GetChannelList(true);
             List<SocketGuildUser> socketUserList = new List<SocketGuildUser>();
             int exists = -1;
@@ -146,7 +147,7 @@ namespace XzBotDiscord
                         }
                     }
                 }
-            }
+            }*/
         }
 
 

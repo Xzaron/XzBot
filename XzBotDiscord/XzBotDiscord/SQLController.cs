@@ -21,7 +21,6 @@ namespace XzBotDiscord
         {
 
         }
-
     }
 
     public class SQLController
@@ -57,12 +56,6 @@ namespace XzBotDiscord
         {
             //public string SQLReplaceAPO(string incomingString)
             //public string SQLReverseAPO(string incomingString)
-            if (!fields.Contains("is_obsolete"))
-            {
-                fields += ",is_obsolete";
-                values += ",'N'";
-            }
-
             string fullQuery = "INSERT INTO " + table_name + "(" + fields + ")" + " VALUES(" + values + ")";
             SqlGo(fullQuery, false);
         }
@@ -167,12 +160,12 @@ namespace XzBotDiscord
 
         public string SQLReplaceAPO(string incomingString)
         {
-            return incomingString.Replace("'", "''");
+            return incomingString.Replace("'", "$APO");
         }
 
         public string SQLReverseAPO(string incomingString)
         {
-            return incomingString.Replace("''", "'");
+            return incomingString.Replace("$APO", "'");
         }
 
 
