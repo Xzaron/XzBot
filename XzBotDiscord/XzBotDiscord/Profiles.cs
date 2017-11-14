@@ -5,45 +5,151 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 
+using System.Net.Sockets;
+using System.IO;
+using Newtonsoft.Json;
 
-
+using Discord.WebSocket;
 
 
 namespace XzBotDiscord
 {
+
+    public class serverReturn
+    {
+        public string Server { get; set; }
+        public string Msg { get; set; }
+        public string Error { get; set; }
+    }
+
+    public class PartialReturn
+    {
+        public string RefString { get; set; }
+        public string StringA { get; set; }
+        public string StringB { get; set; }
+        public string StringC { get; set; }
+
+        public PartialReturn(string refString, string stringA, string stringB, string stringC)
+        {
+            RefString = refString;
+            StringA = stringA;
+            StringB = stringB;
+            StringC = stringC;
+        }
+    }
+
     class Profiles
     {
+        int errorCount = 0;
+        SQLController sqlController;
 
         public Profiles()
         {
-
+            sqlController = new SQLController();
         }
 
-        private static void StartBrowser(string source)
-        {/*
-            var th = new Thread(() =>
-            {
-                var webBrowser = new WebBrowser();
-                webBrowser.ScrollBarsEnabled = false;
-                webBrowser.DocumentCompleted += webBrowser_DocumentCompleted;
-                webBrowser.DocumentText = source;
-                Application.Run();
-            });
-            th.SetApartmentState(ApartmentState.STA);
-            th.Start();
-        }
-
-        static void webBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        public string CreateImage(string UserID,string avatarURL)
         {
-            var webBrowser = (WebBrowser)sender;
-            using (Bitmap bitmap = new Bitmap(webBrowser.Width, webBrowser.Height))
+            TcpClient socketForServer;
+            string msg = "(DiscordAdmin)(imageCreation)(DiscordProfile)(" + UserID + ")("+ avatarURL + ")<EOF>";
+            try
             {
-                webBrowser.DrawToBitmap(bitmap, new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height));
-                bitmap.Save(@"filename.jpg", System.Drawing.Imaging.ImageFormat.Jpeg);
+                socketForServer = new TcpClient("192.168.200.150", 12348);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Couldn't Connect");
+                return "Error - " + e.ToString();
+                errorCount++;
+                return "";
+            }
+            NetworkStream stream = socketForServer.GetStream();
+            StreamReader sr = new StreamReader(stream);
+            StreamWriter sw = new StreamWriter(stream);
+
+            try
+            {
+                string output = msg;
+                sw.WriteLine(output);
+                Console.WriteLine("Client Message");
+                sw.Flush();
+
+                string response = sr.ReadToEnd();
+                serverReturn convertObject = JsonConvert.DeserializeObject<serverReturn>(response);
+                stream.Close();
+                return convertObject.Msg;
+            }
+            catch
+            {
+                Console.WriteLine("There was an error on the server");
+            }
+
+            stream.Close();
+            return "";
+        }
+        public string SetBio(SocketUser user,string message)
+        {
+            if(message.Length < 250)
+            {
+                sqlController.UpdateGo("Users", "bio = '" + message + "'", " user_id = " + user.Id);
+            }
+            else
+            {
+                return "Message must be less than 250 characters";
+            }
+
+            return null;
+        }
+
+        public string CreateBGList()
+        {
+            TcpClient socketForServer;
+            string msg = "(DiscordAdmin)(imageCreation)(DiscordBGs)()()<EOF>";
+            try
+            {
+                socketForServer = new TcpClient("192.168.200.150", 12348);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Couldn't Connect");
+                return "Error - " + e.ToString();
+                errorCount++;
+                return "";
+            }
+            NetworkStream stream = socketForServer.GetStream();
+            StreamReader sr = new StreamReader(stream);
+            StreamWriter sw = new StreamWriter(stream);
+
+            try
+            {
+                string output = msg;
+                sw.WriteLine(output);
+                Console.WriteLine("Client Message");
+                sw.Flush();
+
+                string response = sr.ReadToEnd();
+                serverReturn convertObject = JsonConvert.DeserializeObject<serverReturn>(response);
+                stream.Close();
+                return convertObject.Msg;
+            }
+            catch
+            {
+                Console.WriteLine("There was an error on the server");
+            }
+
+            stream.Close();
+            return "";
+        }
+
+        public void SetBG(int bgNumber, SocketUser user)
+        {
+            string[] files = Directory.GetFiles(@"Z:\\Discord\\Bgs");
+
+            if(files.Length >= bgNumber -1)
+            {
+                sqlController.UpdateGo("Users", "profile_bg = '" + files[bgNumber] + "'", " user_id = " + user.Id);
             }
         }
 
-            */
-        }
     }
 }

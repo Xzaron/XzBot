@@ -11,9 +11,9 @@ namespace XzBotDiscord
 {
     public class SqlRow
     {
-        public List<Tuple<string, string>> MainTuple { get; set; }
+        public Dictionary<string, string> MainTuple { get; set; }
 
-        public SqlRow(List<Tuple<string, string>> mainTuple)
+        public SqlRow(Dictionary<string, string> mainTuple)
         {
             MainTuple = mainTuple;
         }
@@ -25,47 +25,37 @@ namespace XzBotDiscord
 
     public class SQLController
     {
-        Program mainProgram;
-
         private static string databaseName = null;
         private static string userId = null;
         private static string userPassword = null;
 
-        private static string connectionString = "Server=Core\\SQLExpress;Database="+ databaseName + ";User ID = "+ userId + ";Password = "+ userPassword + ";";
+        private static string connectionString;
         private int connectionCounter = 0;
 
-        public SQLController(Program program)
+        public SQLController()
         {
-            mainProgram = program;
-        }
-
-        public void UpdateDBName(string dbName)
-        {
-            databaseName = dbName;
-        }
-        public void UpdateDBUserID(string dbUserID)
-        {
-            userId = dbUserID;
-        }
-        public void UpdateDBPassword(string dbUserPassword)
-        {
-            userPassword = dbUserPassword;
+            ReadWriteFile readWriteFile = new ReadWriteFile();
+            string[] allLines = readWriteFile.ReturnAllLinesAsArray("c:\\Users\\Public\\Documents\\DiscordSQLConnection.txt");
+            Dictionary<string, string> sqlDict = readWriteFile.CreateDictFromStringArray(allLines, '=');
+            databaseName = sqlDict["Database"];
+            userId = sqlDict["UserID"];
+            userPassword = sqlDict["Password"];
+            connectionString = "Server=Core\\SQLExpress;Database=" + databaseName + ";User ID = " + userId + ";Password = " + userPassword + ";";
         }
 
         public void InsertGo(string table_name, string fields, string values)
         {
             //public string SQLReplaceAPO(string incomingString)
             //public string SQLReverseAPO(string incomingString)
+            //Example statement INSERT INTO table_name (column1, column2, column3, ...) VALUES(value1, value2, value3, ...);
             string fullQuery = "INSERT INTO " + table_name + "(" + fields + ")" + " VALUES(" + values + ")";
             SqlGo(fullQuery, false);
         }
-
         public void UpdateGo(string table_name, string values, string where)
         {
             string fullQuery = "Update " + table_name + " SET " + values + " " + "where " + where;
             SqlGo(fullQuery, false);
         }
-
         public List<SqlRow> RetreiveGo(string how_many, string table_name, string where_statement, string calling_function)
         {
             string returns = "";
@@ -81,6 +71,69 @@ namespace XzBotDiscord
 
             return returnedList;
         }
+ 
+        public string CreateValues(List<string> stringList)
+        {
+            string valueString = "'";
+            for (int i = 0; i < stringList.Count; i++)
+            {
+                if (i == (stringList.Count - 1))
+                {
+                    valueString += stringList[i] + "'";
+                }
+                else
+                {
+                    valueString += stringList[i] + "','";
+                }
+            }
+
+            return valueString;
+        }
+        public string  CreateValuesForUpdate(List<string> fieldsList,List<string> valuesList)
+        {
+            string valueString = "";
+            for (int i = 0; i < fieldsList.Count; i++)
+            {
+                if (i == (fieldsList.Count - 1))
+                {
+                    valueString += fieldsList[i];
+
+                    if (valuesList[i].GetType() == typeof(string))
+                    {
+                        valueString += " = '" + valuesList[i] + "'";
+                    }
+                    else
+                    {
+                        valueString += " = " + valuesList[i];
+                    }
+                }
+                else
+                {
+                    valueString += fieldsList[i];
+
+                    if (valuesList[i].GetType() == typeof(string))
+                    {
+                        valueString += " = '" + valuesList[i] + "'";
+                    }
+                    else
+                    {
+                        valueString += " = " + valuesList[i];
+                    }
+                    valueString += ", ";
+                }
+            }
+            return valueString;
+        }
+
+        public string SQLReplaceAPO(string incomingString)
+        {
+            return incomingString.Replace("'", "$APO");
+        }
+        public string SQLReverseAPO(string incomingString)
+        {
+            return incomingString.Replace("$APO", "'");
+        }
+
 
         private List<SqlRow> SqlGo(string fullQuery, bool isSelect)
         {
@@ -124,10 +177,10 @@ namespace XzBotDiscord
 
                         while (reader.Read())
                         {
-                            List<Tuple<string, string>> queryReturnList = new List<Tuple<string, string>>();
+                            Dictionary<string, string> queryReturnList = new Dictionary<string, string>();
                             for (int i = 0; i < rowSchemaList.Count; i++)
                             {
-                                queryReturnList.Add(new Tuple<string, string>(rowSchemaList[i], reader[i].ToString().Trim()));
+                                queryReturnList.Add(rowSchemaList[i].ToString(), reader[i].ToString().Trim());
                             }
                             sqlRowList.Add(new SqlRow(queryReturnList));
                         }
@@ -139,37 +192,6 @@ namespace XzBotDiscord
             }
             return sqlRowList;
         }
-
-        public string CreateValues(List<string> stringList)
-        {
-            string valueString = "'";
-            for (int i = 0; i < stringList.Count; i++)
-            {
-                if (i == (stringList.Count - 1))
-                {
-                    valueString += stringList[i] + "'";
-                }
-                else
-                {
-                    valueString += stringList[i] + "','";
-                }
-            }
-
-            return valueString;
-        }
-
-        public string SQLReplaceAPO(string incomingString)
-        {
-            return incomingString.Replace("'", "$APO");
-        }
-
-        public string SQLReverseAPO(string incomingString)
-        {
-            return incomingString.Replace("$APO", "'");
-        }
-
-
-
 
     }
 }

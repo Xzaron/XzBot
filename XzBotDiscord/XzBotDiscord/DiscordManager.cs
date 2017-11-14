@@ -23,7 +23,6 @@ namespace XzBotDiscord
         CustomCommands customCommands;
         Scheduling schedulingClass;
 
-
         public DiscordManager(DiscordSocketClient clientIncoming)
         {
             client = clientIncoming;
@@ -31,54 +30,66 @@ namespace XzBotDiscord
             client.MessageReceived += MessageReceived;
             customCommands = new CustomCommands(this);
             schedulingClass = new Scheduling(this);
+
+            Task taskA = Task.Run(() => NightTimer());
         }
 
         private async Task NightTimer()
         {
             while (true)
             {
+                int sleeptimer = 1000;
+
                 if (init == false && client.ConnectionState == ConnectionState.Connected)
                 {
-                    for (int i = 0; i < client.Guilds.Count; i++)
-                    {
-                        if (client.Guilds.ElementAt(i).Name.Equals("Heaven and Earth"))
-                        {
-                            for (int j = 0; j < client.Guilds.ElementAt(i).Channels.Count; j++)
-                            {
-                                channelList.Add(client.Guilds.ElementAt(i).Channels.ElementAt(j).Name, client.Guilds.ElementAt(i).Channels.ElementAt(j));
-                            }
-                        }
-                    }
-                    init = true;
+                    InitAfterLoggedIn();
                 }
 
-
-                int sleeptimer = 1000;
-                if (customCommands.isNight == true)
-                {
-                    //5*20
-                    if ((customCommands.nightStart.AddMinutes(40) < DateTime.Now))
-                    {
-                        customCommands.isNight = false;
-                        //customCommands.dayStart = customCommands.nightStart.AddSeconds(1);
-                        customCommands.dayStart = customCommands.nightStart.AddMinutes(40);
-                    }
-
-                }
-                else
-                {
-                    //13.333*4
-                    if ((customCommands.dayStart.AddMinutes(200) < DateTime.Now))
-                    {
-                        customCommands.isNight = true;
-                        customCommands.nightStart = customCommands.dayStart.AddMinutes(200);
-                    }
-
-                }
+                CheckNightChanged();
 
                 Thread.Sleep(sleeptimer);
             }
 
+        }
+
+        private void InitAfterLoggedIn()
+        {
+            for (int i = 0; i < client.Guilds.Count; i++)
+            {
+                if (client.Guilds.ElementAt(i).Name.Equals("Heaven and Earth"))
+                {
+                    for (int j = 0; j < client.Guilds.ElementAt(i).Channels.Count; j++)
+                    {
+                        if (client.Guilds.ElementAt(i).Channels.ElementAt(j).Name != null)
+                        {
+                            channelList.Add(client.Guilds.ElementAt(i).Channels.ElementAt(j).Name, client.Guilds.ElementAt(i).Channels.ElementAt(j));
+                        }
+                    }
+                }
+            }
+            init = true;
+        }
+
+        private void CheckNightChanged()
+        {
+            if (customCommands.isNight == true)
+            {
+                //5*20
+                if ((customCommands.nightStart.AddMinutes(40) < DateTime.Now))
+                {
+                    customCommands.isNight = false;
+                    customCommands.dayStart = customCommands.nightStart.AddMinutes(40);
+                }
+            }
+            else
+            {
+                //13.333*4
+                if ((customCommands.dayStart.AddMinutes(200) < DateTime.Now))
+                {
+                    customCommands.isNight = true;
+                    customCommands.nightStart = customCommands.dayStart.AddMinutes(200);
+                }
+            }
         }
 
         private async Task MessageReceived(SocketMessage message)
@@ -88,7 +99,7 @@ namespace XzBotDiscord
 
             string returnedString = "";
             if (!author.IsBot)
-                returnedString = customCommands.IncomingMessage(author, channel.ToString(), message.Content.ToString());
+                returnedString = customCommands.IncomingMessage(author, channel, message.Content.ToString());
 
             if (returnedString.Length > 0)
                 await message.Channel.SendMessageAsync(returnedString);
@@ -116,8 +127,33 @@ namespace XzBotDiscord
                 messageChannel.SendMessageAsync(message);
             }
         }
+        public void SendFileToChannel(string path, IMessageChannel channel)
+        {
+            if (!path.Contains("Error"))
+            {
+                channel.SendFileAsync(path);
+            }else
+            {
+                channel.SendMessageAsync(path);
+            }
+        }
+        public void SendPMToUser(string message, SocketUser user = null,string userName = null)
+        {
+            if (user != null)
+            {
+                user.SendMessageAsync(message);
+            }
+            else
+            {
+                if (userName != null)
+                {
+                    SocketUser userToPM = GetUserByNickName(userName);
+                    userToPM.SendMessageAsync(message);
+                }
+            }
+        }
 
-        public List<string> GetRolesUserById(ulong id)
+        public List<string> GetRolesUserById(ulong id,string guildName)
         {
             List<SocketRole> roles = new List<SocketRole>();
             List<string> stringRoles = new List<string>();
@@ -125,7 +161,7 @@ namespace XzBotDiscord
             {
                 for (int i = 0; i < client.Guilds.Count; i++)
                 {
-                    if (client.Guilds.ElementAt(i).Name.Equals("Heaven and Earth"))
+                    if (client.Guilds.ElementAt(i).Name.Equals(guildName))
                     {
                         foreach (var item in client.Guilds.ElementAt(i).Users)
                         {
@@ -146,8 +182,28 @@ namespace XzBotDiscord
 
             return stringRoles;
         }
+        public SocketUser GetUserByNickName(string nickName)
+        {
+            if (client.ConnectionState == ConnectionState.Connected)
+            {
+                for (int i = 0; i < client.Guilds.Count; i++)
+                {
+                    if (client.Guilds.ElementAt(i).Name.Equals("Heaven and Earth"))
+                    {
+                        foreach (var item in client.Guilds.ElementAt(i).Users)
+                        {
+                            if (item.Nickname.Equals(nickName))
+                            {
+                                return item;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
 
-        public List<SocketGuildChannel> GetChannelList(bool isVoice)
+        public List<SocketGuildChannel> GetChannelList(bool isVoice,string guildName)
         {
             List<SocketGuildChannel> preChannelList = new List<SocketGuildChannel>();
 
@@ -155,7 +211,7 @@ namespace XzBotDiscord
             {
                 for (int i = 0; i < client.Guilds.Count; i++)
                 {
-                    if (client.Guilds.ElementAt(i).Name.Equals("Heaven and Earth"))
+                    if (client.Guilds.ElementAt(i).Name.Equals(guildName))
                     {
                         preChannelList = client.Guilds.ElementAt(i).Channels.ToList();
                     }
@@ -184,8 +240,41 @@ namespace XzBotDiscord
             }
             return preChannelList;
         }
+        public ISocketMessageChannel GetChannelByName(string channelName, string guildName)
+        {
+            if (client != null && client.ConnectionState == ConnectionState.Connected)
+            {
+                for (int i = 0; i < client.Guilds.Count; i++)
+                {
+                    if (client.Guilds.ElementAt(i).Name.Equals(guildName))
+                    {
+                        for (int j = 0; j < client.Guilds.ElementAt(i).Channels.Count; j++)
+                        {
+                            if (client.Guilds.ElementAt(i).Channels.ElementAt(j).Name.Equals(channelName))
+                                return (ISocketMessageChannel)client.Guilds.ElementAt(i).Channels.ElementAt(j);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
 
 
+        public async void DeleteMessagesFromChannel(int messages, ISocketMessageChannel channel)
+        {
+            if(channel != null && messages < 50)
+            {
+                var messagesToDelete = await channel.GetMessagesAsync(messages).Flatten();
+
+                try
+                {
+                    await channel.DeleteMessagesAsync(messagesToDelete);
+                }
+                catch (Exception e)
+                {
+                }
+            }
+        }
 
 
 

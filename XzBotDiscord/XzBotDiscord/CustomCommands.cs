@@ -17,11 +17,13 @@ namespace XzBotDiscord
     {
 
         public int WarChestCurrent = 0;
-        string warChestFile = @"..\..\warChest.txt";
         bool fileExists = false;
         private Logging logging;
+        string warChestFile = @"..\..\warChest.txt";
 
-        private DiscordManager mainProgram;
+        private DiscordManager discordManager;
+        ReadWriteFile readWriteFile;
+        Profiles profiles;
 
 
         public DateTime dayStart;
@@ -29,29 +31,32 @@ namespace XzBotDiscord
         public bool isNight = false;
         public int minuteCounter = 0;
 
-        public string[] admins = { "Xzaron", "Defector", "Rice" };
-        public string[] officers = { "Tyriel", "", "", "" };
-
         public CustomCommands(DiscordManager program)
         {
-            mainProgram = program;
+            discordManager = program;
             logging = new Logging();
-            checkFileExists();
+            readWriteFile = new ReadWriteFile();
+            profiles = new Profiles();
+            ReadInWarchestNumber();
         }
 
-        public string IncomingMessage(SocketUser user,string channelName,string message)
+        public string IncomingMessage(SocketUser user, ISocketMessageChannel channel, string message)
         {
             string returnedString = "";
 
-            returnedString = AllChannelCommands(user, message, channelName);
-            List<string> roles = mainProgram.GetRolesUserById(user.Id);
+            returnedString = AllChannelCommands(user, message, channel);
+
+            var chnl = (SocketGuildChannel)channel;
+            var GuildName = chnl.Guild.Name;
+
+            List<string> roles = discordManager.GetRolesUserById(user.Id, GuildName);
 
             if (returnedString.Length == 0)
             {
-                switch (channelName)
+                switch (channel.Name)
                 {
                     case "warchest":
-                        logging.writeLog(channelName + " : " + message);
+                        logging.writeLog(channel.Name + " : " + message);
                         returnedString = Warchest(roles, message, user.Username);
                         break;
                     case "devroom":
@@ -65,13 +70,17 @@ namespace XzBotDiscord
 
 
         #region AllChannels
-        private string AllChannelCommands(SocketUser user,string message,string channel)
+        private string AllChannelCommands(SocketUser user,string message,ISocketMessageChannel channel)
         {
             Boolean command = message.Contains("$") ? true : false;
             string returnString = "";
+            string fileName = "";
+
+            var chnl = (SocketGuildChannel)channel;
+            var GuildName = chnl.Guild.Name;
 
             string[] allWords = message.Split(' ');
-            List<string> roles = mainProgram.GetRolesUserById(user.Id);
+            List<string> roles = discordManager.GetRolesUserById(user.Id, GuildName);
 
             if (command == true)
             {
@@ -79,18 +88,19 @@ namespace XzBotDiscord
                 switch (allWords[0])
                 {
                     case "$help":
+                        string tmpChannelName = "";
                         string channelHelp = message.Replace("$help","");
                         channelHelp = channelHelp.Replace(" ", "");
                         if (allWords.Length > 1 && allWords[1].Length > 0)
                         {
-                            channel = channelHelp;
+                            tmpChannelName = channelHelp;
                         }
                         else
                         {
-                            channel = "all";
+                            tmpChannelName = "all";
                         }
 
-                        returnString = BuildHelpString(roles, channel,user.Username);
+                        returnString = BuildHelpString(roles, tmpChannelName, user.Username);
                         break;
 
                     case "$startnight":
@@ -106,7 +116,7 @@ namespace XzBotDiscord
                         break;
                     case "$message":
                             if (CheckUserpermissions(roles, "Officer", user.Username))
-                                mainProgram.MessageChannel(allWords);
+                            discordManager.MessageChannel(allWords);
                         break;
                     case "$gametime":
                             if(allWords.Length > 2)
@@ -114,6 +124,28 @@ namespace XzBotDiscord
                         break;
                     case "$nodewarchecklist":
                         returnString = "https://docs.google.com/forms/d/e/1FAIpQLSdOALhPpcH47g9wDecc_tMH4L9itTfuCoA61OoivcycdCbGzg/viewform";
+                        break;
+                    case "$profile":     
+                        fileName = profiles.CreateImage(user.Id.ToString(), user.GetAvatarUrl());
+                        discordManager.SendFileToChannel(fileName, channel);
+                        break;
+                    case "$pm":
+                        if (CheckUserpermissions(roles, "Admin", user.Username))
+                            discordManager.SendPMToUser("Hello", user);
+                        break;
+                    case "$purge":
+                        if (CheckUserpermissions(roles, "Admin", user.Username))
+                            discordManager.DeleteMessagesFromChannel(Int16.Parse(allWords[1]),channel);
+                        break;
+                    case "$setBio":
+                        profiles.SetBio(user, message.Replace("$setBio", ""));
+                        break;
+                    case "$getbgs":
+                        fileName = profiles.CreateBGList();
+                        discordManager.SendFileToChannel(fileName, channel);
+                        break;
+                    case "$setbg":
+                        profiles.SetBG(Int16.Parse(allWords[1]), user);
                         break;
                 }
             }
@@ -217,7 +249,7 @@ namespace XzBotDiscord
             int four = 4;
 
         }
-
+      #endregion
 
 
         #region Help
@@ -294,8 +326,6 @@ namespace XzBotDiscord
 
             return returnString;
         }
-        #endregion
-
         #endregion
 
         #region Warchest
@@ -424,6 +454,14 @@ namespace XzBotDiscord
             return returnString;
         }
 
+        private void ReadInWarchestNumber()
+        {
+            string WarcChestText = readWriteFile.ReadAllFromFile(warChestFile);
+            int parsedNumber = 0;
+            bool result = Int32.TryParse(WarcChestText, out parsedNumber);
+            WarChestCurrent = parsedNumber;
+        }
+
         #endregion
 
         #region Devroom
@@ -434,15 +472,6 @@ namespace XzBotDiscord
         }
 
         #endregion
-
-
-
-
-
-
-
-
-
 
         #region Permissions
 
@@ -462,43 +491,5 @@ namespace XzBotDiscord
 
         #endregion
 
-
-        private void checkFileExists()
-        {
-            string curDir = @"..\..\";
-
-            if (File.Exists(warChestFile))
-            {
-                fileExists = true;
-                string WarcChestText = System.IO.File.ReadAllText(warChestFile);
-                int parsedNumber = 0;
-                bool result = Int32.TryParse(WarcChestText, out parsedNumber);
-                WarChestCurrent = parsedNumber;
-            }
-            else
-            {
-                if (!Directory.Exists(curDir))
-                {
-                    Directory.CreateDirectory(curDir);
-                }
-
-                File.Create(warChestFile);
-                fileExists = true;
-            }
-        }
-
-        
-
-
-
-
-
-
     }
-
-    
-
-
-
-
 }
