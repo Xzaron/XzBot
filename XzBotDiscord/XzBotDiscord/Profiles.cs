@@ -91,7 +91,7 @@ namespace XzBotDiscord
         {
             if(message.Length < 250)
             {
-                sqlController.UpdateGo("Users", "bio = '" + message + "'", " user_id = " + user.Id);
+                sqlController.UpdateGo("Users", "bio = '" + sqlController.SQLReplaceAPO(message) + "'", " user_id = " + user.Id);
             }
             else
             {
@@ -145,9 +145,9 @@ namespace XzBotDiscord
         {
             string[] files = Directory.GetFiles(@"Z:\\Discord\\Bgs");
 
-            if(files.Length >= bgNumber -1)
+            if(files.Length >= bgNumber - 1)
             {
-                sqlController.UpdateGo("Users", "profile_bg = '" + files[bgNumber] + "'", " user_id = " + user.Id);
+                sqlController.UpdateGo("Users", "profile_bg = '" + files[bgNumber - 1] + "'", " user_id = " + user.Id);
             }
         }
 

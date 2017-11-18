@@ -48,7 +48,7 @@ namespace XzBotDiscord
             //public string SQLReplaceAPO(string incomingString)
             //public string SQLReverseAPO(string incomingString)
             //Example statement INSERT INTO table_name (column1, column2, column3, ...) VALUES(value1, value2, value3, ...);
-            string fullQuery = "INSERT INTO " + table_name + "(" + fields + ")" + " VALUES(" + values + ")";
+            string fullQuery = "INSERT INTO " + table_name + "(" + fields + ")" + " VALUES(" + SQLReplaceAPO(values) + ")";
             SqlGo(fullQuery, false);
         }
         public void UpdateGo(string table_name, string values, string where)
@@ -100,11 +100,11 @@ namespace XzBotDiscord
 
                     if (valuesList[i].GetType() == typeof(string))
                     {
-                        valueString += " = '" + valuesList[i] + "'";
+                        valueString += " = '" + SQLReplaceAPO(valuesList[i]) + "'";
                     }
                     else
                     {
-                        valueString += " = " + valuesList[i];
+                        valueString += " = " + SQLReplaceAPO(valuesList[i]);
                     }
                 }
                 else
@@ -113,11 +113,11 @@ namespace XzBotDiscord
 
                     if (valuesList[i].GetType() == typeof(string))
                     {
-                        valueString += " = '" + valuesList[i] + "'";
+                        valueString += " = '" + SQLReplaceAPO(valuesList[i]) + "'";
                     }
                     else
                     {
-                        valueString += " = " + valuesList[i];
+                        valueString += " = " + SQLReplaceAPO(valuesList[i]);
                     }
                     valueString += ", ";
                 }
@@ -180,7 +180,7 @@ namespace XzBotDiscord
                             Dictionary<string, string> queryReturnList = new Dictionary<string, string>();
                             for (int i = 0; i < rowSchemaList.Count; i++)
                             {
-                                queryReturnList.Add(rowSchemaList[i].ToString(), reader[i].ToString().Trim());
+                                queryReturnList.Add(rowSchemaList[i].ToString(), SQLReverseAPO(reader[i].ToString().Trim()));
                             }
                             sqlRowList.Add(new SqlRow(queryReturnList));
                         }

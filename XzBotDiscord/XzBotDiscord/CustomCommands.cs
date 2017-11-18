@@ -85,7 +85,7 @@ namespace XzBotDiscord
             if (command == true)
             {
 
-                switch (allWords[0])
+                switch (allWords[0].ToLower())
                 {
                     case "$help":
                         string tmpChannelName = "";
@@ -137,8 +137,8 @@ namespace XzBotDiscord
                         if (CheckUserpermissions(roles, "Admin", user.Username))
                             discordManager.DeleteMessagesFromChannel(Int16.Parse(allWords[1]),channel);
                         break;
-                    case "$setBio":
-                        profiles.SetBio(user, message.Replace("$setBio", ""));
+                    case "$setbio":
+                        returnString = profiles.SetBio(user, message.Replace("$setbio", ""));
                         break;
                     case "$getbgs":
                         fileName = profiles.CreateBGList();
