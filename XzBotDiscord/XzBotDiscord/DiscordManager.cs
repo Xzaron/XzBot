@@ -103,7 +103,6 @@ namespace XzBotDiscord
 
             if (returnedString.Length > 0)
                 await message.Channel.SendMessageAsync(returnedString);
-
         }
 
         private Task Log(LogMessage msg)
@@ -127,6 +126,31 @@ namespace XzBotDiscord
                 messageChannel.SendMessageAsync(message);
             }
         }
+
+        public void EmbedToChannel(Embed embed, ISocketMessageChannel channel)
+        {
+            var channelName = client.GetChannel(channelList[channel.ToString()].Id);
+            IMessageChannel messageChannel = (IMessageChannel)channelName;
+            messageChannel.SendMessageAsync("", false, embed);
+        }
+
+        public void EmbedToUser(Embed embed, SocketUser user = null, string userName = null)
+        {
+            if (user != null)
+            {
+                user.SendMessageAsync("", false, embed);
+            }
+            else
+            {
+                if (userName != null)
+                {
+                    SocketUser userToPM = GetUserByNickName(userName);
+                    userToPM.SendMessageAsync("", false, embed);
+                }
+            }
+            Thread.Sleep(200);
+        }
+
         public void SendFileToChannel(string path, IMessageChannel channel)
         {
             if (!path.Contains("Error"))
@@ -192,7 +216,7 @@ namespace XzBotDiscord
                     {
                         foreach (var item in client.Guilds.ElementAt(i).Users)
                         {
-                            if (item.Nickname.Equals(nickName))
+                            if (item.Username != null && item.Username.Equals(nickName))
                             {
                                 return item;
                             }

@@ -13,6 +13,31 @@ using Discord.Commands;
 
 namespace XzBotDiscord
 {
+
+    class HelpAttribute : Attribute
+    {
+        public string HelpArea { get; set; }
+        public string Descr { get; set; }
+
+    }
+
+    public class HelpArea
+    {
+        string Area;
+        public List<Tuple<string, string>> FunctionList;
+        public HelpArea(string area, Tuple<string, string> incomingTuple)
+        {
+            Area = area;
+            FunctionList = new List<Tuple<string, string>>();
+            FunctionList.Add(incomingTuple);
+        }
+
+        public string GetArea()
+        {
+            return Area;
+        }
+    }
+
     class CustomCommands
     {
 
@@ -72,10 +97,13 @@ namespace XzBotDiscord
         }
 
         #region BDO
+
+        [Help(HelpArea = "BDO",Descr = "#Gets the form for node war signups")]
         public string nodewarchecklist(SocketUser user, string message, ISocketMessageChannel channel)
         {
             return "https://docs.google.com/forms/d/e/1FAIpQLSdOALhPpcH47g9wDecc_tMH4L9itTfuCoA61OoivcycdCbGzg/viewform";
         }
+        [Help(HelpArea = "BDO", Descr = "8:27 AM #Sets the current BDO gametime on the bot")]
         public string gametime(SocketUser user, string message, ISocketMessageChannel channel)
         {
             string[] allWords = SplitToStringArray(message);
@@ -83,16 +111,19 @@ namespace XzBotDiscord
                 SetGameTime(allWords[1], allWords[2]);
             return null;
         }
+        [Help(HelpArea = "BDO", Descr = "#Returns how long until night starts or how much time is left in the current night")]
         public string night(SocketUser user, string message, ISocketMessageChannel channel)
         {
             return FindNight();
         }
+        [Help(HelpArea = "BDO", Descr = "#Resets the bot to say night just started")]
         public string startnight(SocketUser user, string message, ISocketMessageChannel channel)
         {
             nightStart = DateTime.Now;
             isNight = true;
             return null;
         }
+        [Help(HelpArea = "BDO", Descr = "#Resets the bot to say day just started")]
         public string startday(SocketUser user, string message, ISocketMessageChannel channel)
         {
             dayStart = DateTime.Now;
@@ -195,8 +226,9 @@ namespace XzBotDiscord
 
         }
         #endregion
-        
+
         #region Officer Commands
+        [Help(HelpArea = "Officer Commands", Descr = "#Has the bot message specific channel with message")]
         public string messagechannel(SocketUser user, string message, ISocketMessageChannel channel)
         {
             List<string> roles = GetRolesByUserId(user, channel);
@@ -208,6 +240,7 @@ namespace XzBotDiscord
         #endregion
 
         #region Admin Commands
+        [Help(HelpArea = "Admin Commands", Descr = "#Removes the last X messages from current channel")]
         public string purge(SocketUser user, string message, ISocketMessageChannel channel)
         {
             List<string> roles = GetRolesByUserId(user, channel);
@@ -216,6 +249,7 @@ namespace XzBotDiscord
                 discordManager.DeleteMessagesFromChannel(Int16.Parse(allWords[1]), channel);
             return null;
         }
+        [Help(HelpArea = "Admin Commands", Descr = "#Has the bot private message user with message")]
         public string privatemessage(SocketUser user, string message, ISocketMessageChannel channel)
         {
             //Incomplete
@@ -228,24 +262,28 @@ namespace XzBotDiscord
         #endregion
 
         #region Profiles
+        [Help(HelpArea = "Profile", Descr = "#Displays user profile")]
         public string profile(SocketUser user,string message, ISocketMessageChannel channel)
         {
             string fileName = profiles.CreateImage(user.Id.ToString(), user.GetAvatarUrl());
             discordManager.SendFileToChannel(fileName, channel);
             return null;
         }
+        [Help(HelpArea = "Profile", Descr = "2 #Sets the users background to the number")]
         public string setbackground(SocketUser user, string message, ISocketMessageChannel channel)
         {
             string[] allWords = SplitToStringArray(message);
             profiles.SetBG(Int16.Parse(allWords[1]), user);
             return null;
         }
+        [Help(HelpArea = "Profile", Descr = "#Displays image of current backgrounds")]
         public string getbackgrounds(SocketUser user, string message, ISocketMessageChannel channel)
         {
             string fileName = profiles.CreateBGList();
             discordManager.SendFileToChannel(fileName, channel);
             return null;
         }
+        [Help(HelpArea = "Profile", Descr = "This Is My Bio #Sets users bio to message")]
         public string setbio(SocketUser user, string message, ISocketMessageChannel channel)
         {
             string returnString = profiles.SetBio(user, message);
@@ -272,33 +310,113 @@ namespace XzBotDiscord
                 tmpChannelName = "all";
             }
 
-            return BuildHelpString(roles, tmpChannelName, user.Username);
+            return BuildHelpString(roles, channel, user.Username);
         }
 
-        private string BuildHelpString(List<string> roles,string channel,string userName)
+        private string BuildHelpString(List<string> roles, ISocketMessageChannel channel,string userName)
         {
+            List<HelpArea> helpAreaList = new List<HelpArea>();
+
+
+            Type thisType = this.GetType();
+            MethodInfo[] myArrayMethodInfo = thisType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (MethodInfo method in myArrayMethodInfo)
+            {
+                if (method.GetCustomAttributes(false).Length > 0)
+                {
+                    object[] atts = method.GetCustomAttributes(typeof(HelpAttribute), true);
+                    string area = "";
+                    string descrText = "";
+                    if (atts[0] != null)
+                    {
+                        area = (atts[0] as HelpAttribute).HelpArea;
+                        descrText = (atts[0] as HelpAttribute).Descr;
+                    }
+                    int exists = -1;
+                    for (int i = 0; i < helpAreaList.Count; i++)
+                    {
+                        if(helpAreaList[i].GetArea().Equals(area))
+                        {
+                            exists = i;
+                        }
+                    }
+
+                    if(exists == -1)
+                    {
+                        helpAreaList.Add(new HelpArea(area, new Tuple<string, string>(method.Name, descrText)));
+                    }
+                    else
+                    {
+                        helpAreaList[exists].FunctionList.Add(new Tuple<string, string>(method.Name, descrText));
+                    }
+
+                }
+            }
+
             string returnString = "";
+            //returnString += "$yellow \r\n";
+            //returnString += "```";
 
-            if(channel.Equals("all"))
+            //Discord markdown cheatsheet https://gist.github.com/ringmatthew/9f7bbfd102003963f9be7dbcf7d40e51
+
+            //discord embeds https://discordapp.com/developers/docs/resources/channel#embed-object     https://anidiotsguide.gitbooks.io/discord-js-bot-guide/examples/using-embeds-in-messages.html
+
+            var eb = new EmbedBuilder() { Title = "**XzBot** Help Commands",Description = "\nUse the $command to interact with the bot. \nAnything in light grey text describes parameters that might be used in assiotiation with that command.\nAnything in dark grey and after the # is a description of what the function does. \nPlease message @Xzaron if you have any trouble'''", Color = Color.Blue };
+
+            for (int i = 0;i < helpAreaList.Count;i++)
             {
-                returnString = "Help Commands for Channels \n";
-                returnString += "$help warchest \n";
-                returnString += "\n$startnight \n";
-                returnString += "$startday \n";
-                returnString += "$night \n";
-                returnString += "$gametime ex.  $gametime 8:51 AM \n";
-                
-            }
-            else
-            {
-                returnString = MemberHelpString(channel);
+                string fieldName = helpAreaList[i].GetArea();
 
-                if(CheckUserpermissions(roles, "officer", userName))
-                    returnString += OfficerHelpString(channel);
+                if(fieldName.Contains("Admin"))
+                {
+                    if (!CheckUserpermissions(roles, "Admin", userName))
+                    {
+                        continue;
+                    }
+                }
 
-                if (CheckUserpermissions(roles, "admin", userName))
-                    returnString += AdminHelpString(channel);
+                if (fieldName.Contains("Officer"))
+                {
+                    if (!CheckUserpermissions(roles, "Officer", userName))
+                    {
+                        continue;
+                    }
+                }
+
+                string message = "```bash\n";
+                for (int j=0;j<helpAreaList[i].FunctionList.Count;j++)
+                {
+                    int additionLength = ("$" + helpAreaList[i].FunctionList[j].Item1 + " " + helpAreaList[i].FunctionList[j].Item2 + "\n").Length;
+
+                    if (message.Length + additionLength < 1010)
+                    {
+                        message += "$" + helpAreaList[i].FunctionList[j].Item1 + " " + helpAreaList[i].FunctionList[j].Item2 + "\n";
+                    }
+                    else
+                    {
+                        message += "```";
+                        eb.AddField(fieldName, message);
+                        message = "```bash\n";
+                    }
+
+                }
+                message += "```";
+                eb.AddField(fieldName, message);
+
             }
+
+            discordManager.EmbedToUser(eb, null, userName);
+
+
+            //eb.AddField(new EmbedFieldBuilder("dflgjfjklg"));
+
+
+
+
+
+
+
+
 
             return returnString;
         }
