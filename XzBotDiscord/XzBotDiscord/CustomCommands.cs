@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-
+using System.Reflection;
 using Discord;
 using Discord.WebSocket;
 using Discord.Commands;
@@ -43,14 +43,20 @@ namespace XzBotDiscord
         public string IncomingMessage(SocketUser user, ISocketMessageChannel channel, string message)
         {
             string returnedString = "";
-
-            returnedString = AllChannelCommands(user, message, channel);
+            Boolean command = message.Contains("$") ? true : false;
+            string[] allWords = message.Split(' ');
+            string newMessage = message.Replace("$", "");
+            //Calling base functions from command
+            Type thisType = this.GetType();
+            MethodInfo theMethod = thisType.GetMethod(allWords[0].ToLower().Replace("$", ""));
+            object[] objectArray = { user, newMessage, channel };
+            returnedString = (string)theMethod.Invoke(this, objectArray);
 
             var chnl = (SocketGuildChannel)channel;
             var GuildName = chnl.Guild.Name;
 
             List<string> roles = discordManager.GetRolesUserById(user.Id, GuildName);
-
+            //Incomplete Need better way to separate commands for specific channels
             if (returnedString.Length == 0)
             {
                 switch (channel.Name)
@@ -59,100 +65,40 @@ namespace XzBotDiscord
                         logging.writeLog(channel.Name + " : " + message);
                         returnedString = Warchest(roles, message, user.Username);
                         break;
-                    case "devroom":
-                        returnedString = Devroom(user.Username, message);
-                        break;
                 }
             }
 
             return returnedString;
         }
 
-
-        #region AllChannels
-        private string AllChannelCommands(SocketUser user,string message,ISocketMessageChannel channel)
+        #region BDO
+        public string nodewarchecklist(SocketUser user, string message, ISocketMessageChannel channel)
         {
-            Boolean command = message.Contains("$") ? true : false;
-            string returnString = "";
-            string fileName = "";
-
-            var chnl = (SocketGuildChannel)channel;
-            var GuildName = chnl.Guild.Name;
-
-            string[] allWords = message.Split(' ');
-            List<string> roles = discordManager.GetRolesUserById(user.Id, GuildName);
-
-            if (command == true)
-            {
-
-                switch (allWords[0].ToLower())
-                {
-                    case "$help":
-                        string tmpChannelName = "";
-                        string channelHelp = message.Replace("$help","");
-                        channelHelp = channelHelp.Replace(" ", "");
-                        if (allWords.Length > 1 && allWords[1].Length > 0)
-                        {
-                            tmpChannelName = channelHelp;
-                        }
-                        else
-                        {
-                            tmpChannelName = "all";
-                        }
-
-                        returnString = BuildHelpString(roles, tmpChannelName, user.Username);
-                        break;
-
-                    case "$startnight":
-                        nightStart = DateTime.Now;
-                        isNight = true;
-                        break;
-                    case "$startday":
-                        dayStart = DateTime.Now;
-                        isNight = false;
-                        break;
-                    case "$night":
-                        returnString =  FindNight();
-                        break;
-                    case "$message":
-                            if (CheckUserpermissions(roles, "Officer", user.Username))
-                            discordManager.MessageChannel(allWords);
-                        break;
-                    case "$gametime":
-                            if(allWords.Length > 2)
-                                SetGameTime(allWords[1], allWords[2]);
-                        break;
-                    case "$nodewarchecklist":
-                        returnString = "https://docs.google.com/forms/d/e/1FAIpQLSdOALhPpcH47g9wDecc_tMH4L9itTfuCoA61OoivcycdCbGzg/viewform";
-                        break;
-                    case "$profile":     
-                        fileName = profiles.CreateImage(user.Id.ToString(), user.GetAvatarUrl());
-                        discordManager.SendFileToChannel(fileName, channel);
-                        break;
-                    case "$pm":
-                        if (CheckUserpermissions(roles, "Admin", user.Username))
-                            discordManager.SendPMToUser("Hello", user);
-                        break;
-                    case "$purge":
-                        if (CheckUserpermissions(roles, "Admin", user.Username))
-                            discordManager.DeleteMessagesFromChannel(Int16.Parse(allWords[1]),channel);
-                        break;
-                    case "$setbio":
-                        returnString = profiles.SetBio(user, message.Replace("$setbio", ""));
-                        break;
-                    case "$getbgs":
-                        fileName = profiles.CreateBGList();
-                        discordManager.SendFileToChannel(fileName, channel);
-                        break;
-                    case "$setbg":
-                        profiles.SetBG(Int16.Parse(allWords[1]), user);
-                        break;
-                }
-            }
-
-            return returnString;
+            return "https://docs.google.com/forms/d/e/1FAIpQLSdOALhPpcH47g9wDecc_tMH4L9itTfuCoA61OoivcycdCbGzg/viewform";
         }
-
+        public string gametime(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string[] allWords = SplitToStringArray(message);
+            if (allWords.Length > 2)
+                SetGameTime(allWords[1], allWords[2]);
+            return null;
+        }
+        public string night(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            return FindNight();
+        }
+        public string startnight(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            nightStart = DateTime.Now;
+            isNight = true;
+            return null;
+        }
+        public string startday(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            dayStart = DateTime.Now;
+            isNight = false;
+            return null;
+        }
         private string FindNight()
         {
             string returnString = "";
@@ -161,7 +107,7 @@ namespace XzBotDiscord
             {
                 DateTime currentNightEnd = nightStart.AddMinutes(40);
                 DateTime now = DateTime.Now;
-                 
+
                 TimeSpan minutesLeft = currentNightEnd - now;
                 double minutes = Math.Round(minutesLeft.TotalMinutes);
                 returnString += "Night will end in approx : " + minutes.ToString() + " minutes";
@@ -170,7 +116,7 @@ namespace XzBotDiscord
             {
                 DateTime currentDayEnd = dayStart.AddMinutes(200);
                 DateTime now = DateTime.Now;
-                            
+
                 TimeSpan minutesLeft = currentDayEnd - now;
                 double minutes = Math.Round(minutesLeft.TotalMinutes);
 
@@ -181,7 +127,7 @@ namespace XzBotDiscord
                 else if (minutes > 60)
                 {
                     string minutes2 = minutesLeft.Minutes.ToString();
-                    if(minutes < 10)
+                    if (minutes < 10)
                     {
                         minutes2 += "0" + minutes;
                     }
@@ -194,21 +140,20 @@ namespace XzBotDiscord
             }
             return returnString;
         }
-
-        private void SetGameTime(string time,string ampm)
+        private void SetGameTime(string time, string ampm)
         {
             DateTime dayStartTime = new DateTime(2017, 6, 26, 7, 0, 0);
             DateTime nightStartTime = new DateTime(2017, 6, 26, 22, 0, 0);
-            DateTime sentDatetime = DateTime.ParseExact("6/26/2017 "+ time + " " + ampm +"", "M/dd/yyyy h:mm tt", CultureInfo.InvariantCulture);
+            DateTime sentDatetime = DateTime.ParseExact("6/26/2017 " + time + " " + ampm + "", "M/dd/yyyy h:mm tt", CultureInfo.InvariantCulture);
 
-            if(ampm.ToLower().Equals("am"))
+            if (ampm.ToLower().Equals("am"))
             {
-                if(sentDatetime.Hour >= 7)
+                if (sentDatetime.Hour >= 7)
                 {
                     //Day
                     isNight = false;
                     TimeSpan difference = sentDatetime - dayStartTime;
-                    double actualSeconds = ((difference.Hours*60) + difference.Minutes) * (13.3333);
+                    double actualSeconds = ((difference.Hours * 60) + difference.Minutes) * (13.3333);
                     DateTime dayStartTmp = DateTime.Now - TimeSpan.FromSeconds(actualSeconds);
                     dayStart = dayStartTmp;
                 }
@@ -249,10 +194,86 @@ namespace XzBotDiscord
             int four = 4;
 
         }
-      #endregion
+        #endregion
+        
+        #region Officer Commands
+        public string messagechannel(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            List<string> roles = GetRolesByUserId(user, channel);
+            string[] allWords = SplitToStringArray(message);
+            if (CheckUserpermissions(roles, "Officer", user.Username))
+                discordManager.MessageChannel(allWords);
+            return null;
+        }
+        #endregion
 
+        #region Admin Commands
+        public string purge(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            List<string> roles = GetRolesByUserId(user, channel);
+            string[] allWords = SplitToStringArray(message);
+            if (CheckUserpermissions(roles, "Admin", user.Username))
+                discordManager.DeleteMessagesFromChannel(Int16.Parse(allWords[1]), channel);
+            return null;
+        }
+        public string privatemessage(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            //Incomplete
+            List<string> roles = GetRolesByUserId(user, channel);
+            string[] allWords = SplitToStringArray(message);
+            if (CheckUserpermissions(roles, "Admin", user.Username))
+                discordManager.SendPMToUser("Hello", user);
+            return null;
+        }
+        #endregion
+
+        #region Profiles
+        public string profile(SocketUser user,string message, ISocketMessageChannel channel)
+        {
+            string fileName = profiles.CreateImage(user.Id.ToString(), user.GetAvatarUrl());
+            discordManager.SendFileToChannel(fileName, channel);
+            return null;
+        }
+        public string setbackground(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string[] allWords = SplitToStringArray(message);
+            profiles.SetBG(Int16.Parse(allWords[1]), user);
+            return null;
+        }
+        public string getbackgrounds(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string fileName = profiles.CreateBGList();
+            discordManager.SendFileToChannel(fileName, channel);
+            return null;
+        }
+        public string setbio(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string returnString = profiles.SetBio(user, message);
+            return returnString;
+        }
+
+        #endregion   
 
         #region Help
+        public string help(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            //Incomplete
+            string tmpChannelName = "";
+            string channelHelp = message.Replace("$help", "");
+            string[] allWords = SplitToStringArray(message);
+            List<string> roles = GetRolesByUserId(user, channel);
+            channelHelp = channelHelp.Replace(" ", "");
+            if (allWords.Length > 1 && allWords[1].Length > 0)
+            {
+                tmpChannelName = channelHelp;
+            }
+            else
+            {
+                tmpChannelName = "all";
+            }
+
+            return BuildHelpString(roles, tmpChannelName, user.Username);
+        }
 
         private string BuildHelpString(List<string> roles,string channel,string userName)
         {
@@ -464,15 +485,6 @@ namespace XzBotDiscord
 
         #endregion
 
-        #region Devroom
-        private string Devroom(string userName,string message)
-        {
-            string returnString = "";
-            return returnString;
-        }
-
-        #endregion
-
         #region Permissions
 
         private Boolean CheckUserpermissions(List<string> roles,string permissionlevel,string userName)
@@ -489,6 +501,27 @@ namespace XzBotDiscord
             return false;
         }
 
+        #endregion
+
+        #region Class Functions
+        private string[] SplitToStringArray(string message)
+        {
+            string[] allWords = message.Split(' ');
+            return allWords;
+        }
+
+        private string GetGuildName(ISocketMessageChannel channel)
+        {
+            var GuildChannel = (SocketGuildChannel)channel;
+            var GuildName = GuildChannel.Guild.Name;
+            return GuildName;
+        }
+
+        private List<string> GetRolesByUserId(SocketUser user, ISocketMessageChannel channel)
+        {
+            string guidName = GetGuildName(channel);
+            return discordManager.GetRolesUserById(user.Id, guidName);
+        }
         #endregion
 
     }
