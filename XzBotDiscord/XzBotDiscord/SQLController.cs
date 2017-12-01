@@ -48,7 +48,7 @@ namespace XzBotDiscord
             //public string SQLReplaceAPO(string incomingString)
             //public string SQLReverseAPO(string incomingString)
             //Example statement INSERT INTO table_name (column1, column2, column3, ...) VALUES(value1, value2, value3, ...);
-            string fullQuery = "INSERT INTO " + table_name + "(" + fields + ")" + " VALUES(" + SQLReplaceAPO(values) + ")";
+            string fullQuery = "INSERT INTO " + table_name + "(" + fields + ")" + " VALUES(" + values + ")";
             SqlGo(fullQuery, false);
         }
         public void UpdateGo(string table_name, string values, string where)
