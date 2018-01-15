@@ -191,6 +191,8 @@
     <Compile Include="ReadWriteFile.cs" />
     <Compile Include="Scheduling.cs" />
     <Compile Include="SQLController.cs" />
+    <Compile Include="Streaming.cs" />
+    <Compile Include="Twitch.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

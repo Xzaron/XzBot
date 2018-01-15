@@ -206,6 +206,75 @@ namespace XzBotDiscord
 
             return stringRoles;
         }
+        public List<SocketRole> GetRolesForServer(string guildName)
+        {
+            List<SocketRole> roles = new List<SocketRole>();
+
+            for (int i = 0; i < client.Guilds.Count; i++)
+            {
+                if (client.Guilds.ElementAt(i).Name.Equals(guildName))
+                {
+                    for (int j = 0; j < client.Guilds.ElementAt(i).Roles.Count; j++)
+                    {
+                        roles.Add(client.Guilds.ElementAt(i).Roles.ElementAt(j));
+                    }
+                }
+            }
+            return roles;
+        }
+
+        public async void RemoveRoleForUser(SocketRole role, SocketUser user, string guildName, bool is_from_bot)
+        {
+            if (client.ConnectionState == ConnectionState.Connected)
+            {
+                for (int i = 0; i < client.Guilds.Count; i++)
+                {
+                    if (client.Guilds.ElementAt(i).Name.Equals(guildName))
+                    {
+                        foreach (var item in client.Guilds.ElementAt(i).Users)
+                        {
+                            if (item.Id.Equals(user.Id))
+                            {
+                                await item.RemoveRoleAsync(role);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public bool SetRoleForUser(SocketRole role, SocketUser user, string guildName,bool is_from_bot)
+        {
+            string[] excludeRoles = {"admin","streaming","officer","veteran","elite","member","bot"};
+
+            if (!excludeRoles.Any(role.Name.ToLower().Contains) || is_from_bot == true)
+            {
+                if (client.ConnectionState == ConnectionState.Connected)
+                {
+                    SetRole(guildName, user, role);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private async void SetRole(string guildName, SocketUser user, SocketRole role)
+        {
+            for (int i = 0; i < client.Guilds.Count; i++)
+            {
+                if (client.Guilds.ElementAt(i).Name.Equals(guildName))
+                {
+                    foreach (var item in client.Guilds.ElementAt(i).Users)
+                    {
+                        if (item.Id.Equals(user.Id))
+                        {
+                            await item.AddRoleAsync(role);
+                        }
+                    }
+                }
+            }     
+        }
+
         public SocketUser GetUserByNickName(string nickName)
         {
             if (client.ConnectionState == ConnectionState.Connected)
@@ -217,6 +286,26 @@ namespace XzBotDiscord
                         foreach (var item in client.Guilds.ElementAt(i).Users)
                         {
                             if (item.Username != null && item.Username.Equals(nickName))
+                            {
+                                return item;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+        public SocketUser GetUserByID(ulong user_id)
+        {
+            if (client.ConnectionState == ConnectionState.Connected)
+            {
+                for (int i = 0; i < client.Guilds.Count; i++)
+                {
+                    if (client.Guilds.ElementAt(i).Name.Equals("Heaven and Earth"))
+                    {
+                        foreach (var item in client.Guilds.ElementAt(i).Users)
+                        {
+                            if (item.Username != null && item.Id.Equals(user_id))
                             {
                                 return item;
                             }

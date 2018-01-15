@@ -90,12 +90,13 @@ namespace XzBotDiscord
 
         static List<ScheduleAppt> schedulingList;
         static List<User> userList;
-
+        static Streaming streaming;
 
         public Scheduling(DiscordManager program)
         {
             discordManager = program;
             sqlController = new SQLController();
+            streaming = new Streaming(program);
 
             schedulingList = new List<ScheduleAppt>();
 
@@ -110,8 +111,10 @@ namespace XzBotDiscord
         private void InitSchedulingServices()
         {
             //Tracks a user time in voice chat and handles stuff in the db
-            ScheduleAppt usersInDiscordVoice = new ScheduleAppt(DateTime.Now, TimeSpan.FromDays(999999), TimeSpan.FromMinutes(5), "getActiveVoiceUsers");
+            ScheduleAppt usersInDiscordVoice = new ScheduleAppt(DateTime.Now, TimeSpan.FromDays(999999), TimeSpan.FromMinutes(5), "getActiveVoiceUsers");      
             schedulingList.Add(usersInDiscordVoice);
+            ScheduleAppt usersCurrentlyStreaming = new ScheduleAppt(DateTime.Now, TimeSpan.FromDays(999999), TimeSpan.FromMinutes(1), "getActiveStreamers");
+            schedulingList.Add(usersCurrentlyStreaming);
         }
 
         private void SetUserList()
@@ -158,8 +161,16 @@ namespace XzBotDiscord
                 case "getActiveVoiceUsers":
                     GetActiveVoiceUsers();
                     break;
-
+                case "getActiveStreamers":
+                    GetActiveStreamers();
+                    break;
             }
+        }
+
+        private static void GetActiveStreamers()
+        {
+            streaming.GetStreamersFromDB();
+            streaming.CheckActiveStreamers();
         }
 
         private static void GetActiveVoiceUsers()

@@ -49,7 +49,7 @@ namespace XzBotDiscord
         private DiscordManager discordManager;
         ReadWriteFile readWriteFile;
         Profiles profiles;
-
+        Streaming streaming;
 
         public DateTime dayStart;
         public DateTime nightStart;
@@ -62,7 +62,9 @@ namespace XzBotDiscord
             logging = new Logging();
             readWriteFile = new ReadWriteFile();
             profiles = new Profiles();
-            ReadInWarchestNumber();
+            streaming = new Streaming(program);
+            ReadInWarchestNumber();  
+
         }
 
         public string IncomingMessage(SocketUser user, ISocketMessageChannel channel, string message)
@@ -96,9 +98,158 @@ namespace XzBotDiscord
             return returnedString;
         }
 
+        #region General Commands
+
+        [Help(HelpArea = "General Commands", Descr = "#gets list of roles for the server")]
+        public string roles(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string guildName = GetGuildName(channel);
+            List<SocketRole> roleList =  discordManager.GetRolesForServer(guildName);
+            string returnString = "The list of roles for the server : ";
+            foreach (SocketRole role in roleList)
+            {
+                if(!role.Name.Contains("@everyone"))
+                    returnString += role.Name + ", ";
+            }
+            return returnString;
+        }
+
+        [Help(HelpArea = "General Commands", Descr = "role #sets your role to specific role on the server(same as addrole)")]
+        public string setrole(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string guildName = GetGuildName(channel);
+            string[] allWords = SplitToStringArray(message);
+            List<SocketRole> roleList = discordManager.GetRolesForServer(guildName);
+
+            string roleName = message.Replace("setrole", "");
+            bool returned = false;
+            foreach (SocketRole role in roleList)
+            {
+                if(roleName.ToString().ToLower().Trim().Equals(role.Name.ToLower()))
+                {
+                    roleName = role.Name;
+                    returned = discordManager.SetRoleForUser(role, user, guildName,false);
+                }
+            }
+ 
+            if(returned == true)
+            {
+                return "Role " + roleName + " has been added";
+            }
+            return "Role " + roleName + " has NOT been added";
+        }
+        [Help(HelpArea = "General Commands", Descr = "role #sets your role to specific role on the server(same as setrole)")]
+        public string addrole(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            return setrole(user, message, channel);
+        }
+
+
+        [Help(HelpArea = "General Commands", Descr = "role #removes your role to specific role on the server")]
+        public string removerole(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string guildName = GetGuildName(channel);
+            string[] allWords = SplitToStringArray(message);
+            List<SocketRole> roleList = discordManager.GetRolesForServer(guildName);
+
+            string roleName = message.Replace("removerole", "");
+            bool returned = false;
+            foreach (SocketRole role in roleList)
+            {
+                if (roleName.ToString().ToLower().Trim().Equals(role.Name.ToLower()))
+                {
+                    roleName = role.Name;
+                    discordManager.RemoveRoleForUser(role, user, guildName, false);
+                }
+            }
+
+            return "Role " + roleName + " has been removed";
+        }
+
+        #endregion
+
+        #region Officer Commands
+        [Help(HelpArea = "Officer Commands", Descr = "#Has the bot message specific channel with message")]
+        public string messagechannel(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            List<string> roles = GetRolesByUserId(user, channel);
+            string[] allWords = SplitToStringArray(message);
+            if (CheckUserpermissions(roles, "Officer", user.Username))
+                discordManager.MessageChannel(allWords);
+            return null;
+        }
+
+        
+        #endregion
+
+        #region Admin Commands
+        [Help(HelpArea = "Admin Commands", Descr = "X #Removes the last X messages from current channel")]
+        public string purge(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            List<string> roles = GetRolesByUserId(user, channel);
+            string[] allWords = SplitToStringArray(message);
+            if (CheckUserpermissions(roles, "Admin", user.Username))
+                discordManager.DeleteMessagesFromChannel(Int16.Parse(allWords[1]), channel);
+            return null;
+        }
+        [Help(HelpArea = "Admin Commands", Descr = "#Has the bot private message user with message")]
+        public string privatemessage(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            //Incomplete
+            List<string> roles = GetRolesByUserId(user, channel);
+            string[] allWords = SplitToStringArray(message);
+            if (CheckUserpermissions(roles, "Admin", user.Username))
+                discordManager.SendPMToUser("Hello", user);
+            return null;
+        }
+        #endregion
+
+        #region Profiles
+        [Help(HelpArea = "Profile", Descr = "#Displays user profile")]
+        public string profile(SocketUser user,string message, ISocketMessageChannel channel)
+        {
+            string fileName = profiles.CreateImage(user.Id.ToString(), user.GetAvatarUrl());
+            discordManager.SendFileToChannel(fileName, channel);
+            return null;
+        }
+        [Help(HelpArea = "Profile", Descr = "X #Sets the users background to the number X")]
+        public string setbackground(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string[] allWords = SplitToStringArray(message);
+            profiles.SetBG(Int16.Parse(allWords[1]), user);
+            return null;
+        }
+        [Help(HelpArea = "Profile", Descr = "#Displays image of current backgrounds")]
+        public string getbackgrounds(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string fileName = profiles.CreateBGList();
+            discordManager.SendFileToChannel(fileName, channel);
+            return null;
+        }
+        [Help(HelpArea = "Profile", Descr = "This Is My Bio #Sets users bio to message")]
+        public string setbio(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string returnString = profiles.SetBio(user, message);
+            return returnString;
+        }
+
+        #endregion
+
+        #region Streaming
+
+        [Help(HelpArea = "Streaming", Descr = "Chanel Name #Sets your twitch channel name with the discord bot. Just use your channel name you do not need twitch.tv/ChannelName")]
+        public string setstream(SocketUser user, string message, ISocketMessageChannel channel)
+        {
+            string[] allWords = SplitToStringArray(message);
+            streaming.UpdateStreamURL(user, allWords[1]);
+            return null;
+        }
+
+        #endregion
+
         #region BDO
 
-        [Help(HelpArea = "BDO",Descr = "#Gets the form for node war signups")]
+        [Help(HelpArea = "BDO", Descr = "#Gets the form for node war signups")]
         public string nodewarchecklist(SocketUser user, string message, ISocketMessageChannel channel)
         {
             return "https://docs.google.com/forms/d/e/1FAIpQLSdOALhPpcH47g9wDecc_tMH4L9itTfuCoA61OoivcycdCbGzg/viewform";
@@ -227,70 +378,13 @@ namespace XzBotDiscord
         }
         #endregion
 
-        #region Officer Commands
-        [Help(HelpArea = "Officer Commands", Descr = "#Has the bot message specific channel with message")]
-        public string messagechannel(SocketUser user, string message, ISocketMessageChannel channel)
-        {
-            List<string> roles = GetRolesByUserId(user, channel);
-            string[] allWords = SplitToStringArray(message);
-            if (CheckUserpermissions(roles, "Officer", user.Username))
-                discordManager.MessageChannel(allWords);
-            return null;
-        }
-        #endregion
 
-        #region Admin Commands
-        [Help(HelpArea = "Admin Commands", Descr = "#Removes the last X messages from current channel")]
-        public string purge(SocketUser user, string message, ISocketMessageChannel channel)
-        {
-            List<string> roles = GetRolesByUserId(user, channel);
-            string[] allWords = SplitToStringArray(message);
-            if (CheckUserpermissions(roles, "Admin", user.Username))
-                discordManager.DeleteMessagesFromChannel(Int16.Parse(allWords[1]), channel);
-            return null;
-        }
-        [Help(HelpArea = "Admin Commands", Descr = "#Has the bot private message user with message")]
-        public string privatemessage(SocketUser user, string message, ISocketMessageChannel channel)
-        {
-            //Incomplete
-            List<string> roles = GetRolesByUserId(user, channel);
-            string[] allWords = SplitToStringArray(message);
-            if (CheckUserpermissions(roles, "Admin", user.Username))
-                discordManager.SendPMToUser("Hello", user);
-            return null;
-        }
-        #endregion
 
-        #region Profiles
-        [Help(HelpArea = "Profile", Descr = "#Displays user profile")]
-        public string profile(SocketUser user,string message, ISocketMessageChannel channel)
-        {
-            string fileName = profiles.CreateImage(user.Id.ToString(), user.GetAvatarUrl());
-            discordManager.SendFileToChannel(fileName, channel);
-            return null;
-        }
-        [Help(HelpArea = "Profile", Descr = "2 #Sets the users background to the number")]
-        public string setbackground(SocketUser user, string message, ISocketMessageChannel channel)
-        {
-            string[] allWords = SplitToStringArray(message);
-            profiles.SetBG(Int16.Parse(allWords[1]), user);
-            return null;
-        }
-        [Help(HelpArea = "Profile", Descr = "#Displays image of current backgrounds")]
-        public string getbackgrounds(SocketUser user, string message, ISocketMessageChannel channel)
-        {
-            string fileName = profiles.CreateBGList();
-            discordManager.SendFileToChannel(fileName, channel);
-            return null;
-        }
-        [Help(HelpArea = "Profile", Descr = "This Is My Bio #Sets users bio to message")]
-        public string setbio(SocketUser user, string message, ISocketMessageChannel channel)
-        {
-            string returnString = profiles.SetBio(user, message);
-            return returnString;
-        }
 
-        #endregion   
+
+
+
+
 
         #region Help
         public string help(SocketUser user, string message, ISocketMessageChannel channel)
