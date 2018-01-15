@@ -12,8 +12,9 @@ namespace XzBotDiscord
 {
     class Twitch
     {
-        private string client_secret = "3g7f672stcv5lw7zwc14u3b8xi2w0g";
-        private string client_id = "q3n8a6svx49aven62hhz36sm0ozyfp";
+        private string client_secret;
+        private string client_id;
+        ReadWriteFile readWriteFile = new ReadWriteFile();
 
         private string access_token = "";
         public Twitch()
@@ -24,6 +25,11 @@ namespace XzBotDiscord
 
         private void LoginTwitch()
         {
+            string[] allLines = readWriteFile.ReturnAllLinesAsArray("c:\\Users\\Public\\Documents\\DiscordSQLConnection.txt");
+            Dictionary<string, string> sqlDict = readWriteFile.CreateDictFromStringArray(allLines, '=');
+            client_secret = sqlDict["Twitch_client_secret"];
+            client_id = sqlDict["Twitch_client_id"];
+
             //POST https://api.twitch.tv/kraken/oauth2/token?client_id =< your client ID>&client_secret =< your client secret>&grant_type = client_credentials&scope =< space - separated list of scopes >
 
             string postString = string.Format("grant_type=client_credentials");
