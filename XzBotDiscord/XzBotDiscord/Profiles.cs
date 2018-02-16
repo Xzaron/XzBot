@@ -128,7 +128,8 @@ public Profiles()
             string msg = "(DiscordAdmin)(imageCreation)(DiscordBGs)()()<EOF>";
             try
             {
-                socketForServer = new TcpClient("192.168.200.150", 12348);
+                //socketForServer = new TcpClient("192.168.200.150", 12348);
+                socketForServer = new TcpClient("192.168.200.50", 12346);
             }
             catch (Exception e)
             {
@@ -151,6 +152,18 @@ public Profiles()
                 string response = sr.ReadToEnd();
                 serverReturn convertObject = JsonConvert.DeserializeObject<serverReturn>(response);
                 stream.Close();
+
+                if (currentComputer.Equals("core"))
+                {
+                    if (convertObject.Msg.Contains("Z:"))
+                        convertObject.Msg = convertObject.Msg.Replace("Z:", "E:\\Share");
+                }
+                else
+                {
+                    if (convertObject.Msg.Contains("E:"))
+                        convertObject.Msg = convertObject.Msg.Replace("E:\\Share", "Z:");
+                }
+
                 return convertObject.Msg;
             }
             catch
@@ -168,7 +181,10 @@ public Profiles()
 
             if(files.Length >= bgNumber - 1)
             {
-                sqlController.UpdateGo("Users", "profile_bg = '" + files[bgNumber - 1] + "'", " user_id = " + user.Id);
+                string fileString = files[bgNumber - 1];
+                fileString = fileString.Replace("Z:","");
+
+                sqlController.UpdateGo("Users", "profile_bg = '" + fileString + "'", " user_id = " + user.Id);
             }
         }
 
