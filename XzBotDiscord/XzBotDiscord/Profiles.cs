@@ -7,6 +7,7 @@ using System.Threading;
 
 using System.Net.Sockets;
 using System.IO;
+using System.Net;
 using Newtonsoft.Json;
 
 using Discord.WebSocket;
@@ -44,9 +45,13 @@ namespace XzBotDiscord
     {
         int errorCount = 0;
         SQLController sqlController;
+        private string currentComputer = "core";
 
-        public Profiles()
+       
+
+public Profiles()
         {
+            CheckComputer();
             sqlController = new SQLController();
         }
 
@@ -56,7 +61,8 @@ namespace XzBotDiscord
             string msg = "(DiscordAdmin)(imageCreation)(DiscordProfile)(" + UserID + ")("+ avatarURL + ")<EOF>";
             try
             {
-                socketForServer = new TcpClient("192.168.200.150", 12348);
+                //socketForServer = new TcpClient("192.168.200.150", 12348);
+                socketForServer = new TcpClient("192.168.200.50", 12346);
             }
             catch (Exception e)
             {
@@ -72,6 +78,7 @@ namespace XzBotDiscord
             try
             {
                 string output = msg;
+
                 sw.WriteLine(output);
                 Console.WriteLine("Client Message");
                 sw.Flush();
@@ -79,6 +86,18 @@ namespace XzBotDiscord
                 string response = sr.ReadToEnd();
                 serverReturn convertObject = JsonConvert.DeserializeObject<serverReturn>(response);
                 stream.Close();
+
+                if (currentComputer.Equals("core"))
+                {
+                    if (convertObject.Msg.Contains("Z:"))
+                        convertObject.Msg = convertObject.Msg.Replace("Z:", "E:\\Share");
+                }
+                else
+                {
+                    if (convertObject.Msg.Contains("E:"))
+                        convertObject.Msg = convertObject.Msg.Replace("E:\\Share", "Z:");
+                }
+
                 return convertObject.Msg;
             }
             catch
@@ -150,6 +169,23 @@ namespace XzBotDiscord
             if(files.Length >= bgNumber - 1)
             {
                 sqlController.UpdateGo("Users", "profile_bg = '" + files[bgNumber - 1] + "'", " user_id = " + user.Id);
+            }
+        }
+
+        private void CheckComputer()
+        {
+            IPHostEntry ipHostInfo = Dns.Resolve(Dns.GetHostName());
+            IPAddress ipAddress = ipHostInfo.AddressList[0];
+            if (ipAddress.ToString().Equals("192.168.200.50"))
+            {
+                currentComputer = "core";
+            }
+            else
+            {
+                if (ipAddress.ToString().Equals("192.168.200.150"))
+                {
+                    currentComputer = "Antharas";
+                }
             }
         }
 

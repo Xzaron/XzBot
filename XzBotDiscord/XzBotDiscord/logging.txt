@@ -406,3 +406,5 @@ $warchest +8
 11/22/2017 4:01:38 PM ERROR : Invalid permissions : รк๏lเг๏
 11/22/2017 4:06:01 PM ERROR : Invalid permissions : thegiraff
 11/22/2017 4:06:01 PM ERROR : Invalid permissions : thegiraff
+1/22/2018 9:46:10 PM ERROR : Invalid permissions : thegiraff
+1/22/2018 9:46:19 PM ERROR : Invalid permissions : thegiraff
