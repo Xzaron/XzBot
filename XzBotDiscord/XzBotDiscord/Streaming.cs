@@ -74,8 +74,10 @@ namespace XzBotDiscord
                 }
                 else
                 {
-                    //If not then we make sure they do not have the streamer role
-                    SetStreamerInactive(currentNode.userID);
+                    
+                        //If not then we make sure they do not have the streamer role
+                        SetStreamerInactive(currentNode.userID);
+                    
                 }
             }
         }
@@ -99,15 +101,27 @@ namespace XzBotDiscord
         private void SetStreamerInactive(ulong streamer_id)
         {
             List<SocketRole> roleList = discordManager.GetRolesForServer("Heaven and Earth");
+            List<string> userRoleList = discordManager.GetRolesUserById(streamer_id, "Heaven and Earth");
             SocketUser user = discordManager.GetUserByID(streamer_id);
             string roleName = "Streaming";
-            bool returned = false;
-            foreach (SocketRole role in roleList)
+            bool hasRole = false;
+
+            foreach(string userRole in userRoleList)
             {
-                if (roleName.ToString().ToLower().Trim().Equals(role.Name.ToLower()))
+                if(userRole.Equals("Streaming"))
                 {
-                    roleName = role.Name;
-                    discordManager.RemoveRoleForUser(role, user, "Heaven and Earth", true);
+                    hasRole = true;
+                }
+            }
+            if (hasRole == true)
+            {
+                foreach (SocketRole role in roleList)
+                {
+                    if (roleName.ToString().ToLower().Trim().Equals(role.Name.ToLower()))
+                    {
+                        roleName = role.Name;
+                        discordManager.RemoveRoleForUser(role, user, "Heaven and Earth", true);
+                    }
                 }
             }
         }

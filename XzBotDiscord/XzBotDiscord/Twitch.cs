@@ -20,7 +20,7 @@ namespace XzBotDiscord
         public Twitch()
         {
             LoginTwitch();
-            CheckIfStreamIsOnline("Xzaron");
+            //CheckIfStreamIsOnline("Xzaron");
         }
 
         private void LoginTwitch()
